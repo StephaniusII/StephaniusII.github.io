@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Guesser</title>
+    <link rel="stylesheet" href="./Styles.css">
+    <script src="./fanpointer/fan.js"></script>
+    <script src="./fanpointer/touchInputHandler.js"></script>
+    <style>
+
+
+        .tStructure{
+            width:50%;
+            margin:auto;
+            text-align: center;
+        }
+
+    </style>
+    <script>
+
+        function guesser(number, range){
+            r=range/2;
+            max=1*range;
+            min=0;
+            n=1;
+            reached=0;
+            string=""
+            if (number==r){
+                document.getElementById("pResult").innerHTML = "Your number is <span class='subtitle'>"+r+"</span>. It took me <span class='subtitle'>1</span> try to find."
+                return;
+            }
+
+
+            while (r != number){
+                n++;
+                string+=r+", "
+                if (r<number){
+                    min=1*r;
+                    r=1*(((max+r)/2).toFixed(0));
+                }
+
+                else if (r>number){
+                    max=1*r;
+                    r=1*(((min+r)/2).toFixed(0));
+                }
+
+                else if (n>100){
+                    alert("Oh no! I failed!");
+                    break;
+                }
+            }
+            string+=r+"."
+            document.getElementById("pResult").innerHTML = "Your number is <b>"+r+"</b>. It took me <b>"+n+"</b> tries to find. <br> I guessed the numbers <b>"+string+"</b>";
+        }
+
+        function validation(a, ulimit, llimit, decimals){
+            a*=1;
+            ulimit*=1;
+            llimit*=1;
+            decimals*=1;
+            if (a > ulimit){
+                b=ulimit;
+            }
+            else if (a < llimit){
+                b=llimit;
+            }
+            else if (isNaN(a)){
+                b="error";
+            }
+            else{
+                b=(1*a).toFixed(decimals);
+            }
+            return b;
+        }
+    </script>
+</head>
+<body>
+    <div class="divTop">
+        <div class="container">
+            <h1>Let's play a game!</h1> <br>
+            <h3>You think of a number, and I try to guess it!</h3>
+
+            <table class="tStructure">
+                <tr>
+                    <td class="tStructure">
+                        <label for="numRange">Range</label>
+                    </td>
+                    <td>
+                        <input type="text" id="numRange" value="100"  class="textbox" onchange="numRange.value=validation(numRange.value, 100000, 1, 0)"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="numberToGuess">Number</label>
+                    </td>
+                    <td>
+                        <input value="1" type="number" id="numberToGuess" class="textbox" onchange="numberToGuess.value=validation(numberToGuess.value, numRange.value, 1, 0)"/>
+                    </td>
+                </tr>
+            </table>
+
+            <input type="button" id="Start" value="start" class="buttonGreen" onclick="guesser(numberToGuess.value, numRange.value)">
+            <button id="hardMode" class="buttonBlue" onclick="toggleFan()">Alternate Mouse Mode</button>
+            <br>
+            <span id="pResult"></span>
+
+        </div>
+</body>
+</html>

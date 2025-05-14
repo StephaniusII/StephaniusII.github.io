@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Rolls</title>
+    <link rel="stylesheet" href="./Styles.css">
+    <script src="./fanpointer/fan.js"></script>
+    <script src="./fanpointer/touchInputHandler.js"></script>
+
+    <style>
+        :root {
+            --baseColor: #3d240e;
+            --secondaryColor: #fffaf0;
+            --highlightColor: #ffe6b4;
+        }
+
+        .containerFixed{
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            margin: 0 auto;
+            width: 50%;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .container .diceArea{
+            height:20em;
+        }
+        .dice { 
+            fill: var(--highlightColor);
+            stroke: var(--baseColor);
+            stroke-width: 2px;
+        }
+
+        circle {
+            fill: var(--baseColor);
+            stroke-width: 0;
+        }
+
+        .statLabel {
+            color: #15350f;
+            font-size: 25px;
+            font-weight: bold;
+            transform: rotate(90deg);
+        }
+
+        .buttonGreen{
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+
+    </style>
+
+    <script>
+
+        window.onload = function(){
+            createDice(2);
+        }
+
+        diceList = [];      //the list for all dice object data: nr, value
+        sumList = [];       //the list for all dice sums: value, Times rolled
+        rollInterval = 0;      //initiated to run, access and restart intervals globally.
+        intervalIsOn = 0;       //toggled by functions "startInterval" and "stopInterval"
+
+        class dice{         //values for the die objects
+            constructor(Nr, value){
+                this.Nr=Nr;
+                this.value=value;
+            }
+            drawDie() {     //draws the rectangles and prepares an svg group to draw the eyes inside.
+                document.getElementById("diceTable").innerHTML+='<svg class="dice" id="die'+this.Nr+'" height="100" width="100"></svg>'
+                document.getElementById("die"+this.Nr).innerHTML='"<rect width="80%" height="80%" x="10%" y="10%"/>' + '<g id="EyesDie'+this.Nr+'"></g>';
+            }
+        }
+
+        function validation(value, ulimit, llimit, decimals){       //Makes sure a number fulfills certain requirements
+                                                                    //use as follows in <input>: onchange="INPUTID.value=validation(INPUTID.value, LOWER_LIMIT, UPPER_LIMIT, NUMBER_OF_DECIMALS)"
+            value       = parseFloat(value);                        //change input string to number
+            ulimit      = parseFloat(ulimit);
+            llimit      = parseFloat(llimit);
+            decimals    = parseInt(decimals);
+
+            if (isNaN(value)){                                      //is value a number? (not required for input type "number")
+                return "error";
+            }
+            else if (value > ulimit){                               //check against an upper limit
+                return ulimit;
+            }
+            else if (value < llimit){                               //check against a lower limit
+                return llimit;
+            }
+            else{
+                return (value).toFixed(decimals);                   //rounds to "decimals" decimals
+            }
+        }
+
+        function createDice(amount){        //creates the given amount of dice objects
+            diceList = [];
+            document.getElementById("diceTable").innerHTML="";
+            for (let i=0; i<amount; i++){
+
+                const die = new dice(i,1);
+                die.drawDie();
+                diceList.push(die);         //collects all the values for each die (appending)
+
+            }
+            rollDice()
+        }
+
+        function rollDice(){                //creates new random values for each die
+            const DiceSides = document.getElementById("diceSides").value;
+            diceList.forEach(die => {
+                die.value=Math.floor(Math.random()*DiceSides)+1;
+                drawEyes(die.Nr, die.value);    //initiates the drawing of the die eyes
+            })
+
+            let value = addUp();
+            document.getElementById('dSumUp').innerText="Total: " + value;
+            if (sumList[value] === undefined) {
+                sumList[value] = 1;
+            }
+            else {
+                sumList[value] += 1;
+            }
+            drawStatistics();
+        }
+
+        function drawEyes(Nr, value){       //creates the Eyes for a die according to the given values available in the diceList
+            const eyesGroup = document.getElementById("EyesDie"+Nr);
+            const maxValue = document.getElementById("diceSides").value;
+            if (maxValue > 9){
+                if (value<=9){
+                    eyesGroup.innerHTML='<text x="36%" y="65%" fill="white" weight="bold" font-size="50">'+value+'</text>'
+                }
+                else if (value<=99){
+                    eyesGroup.innerHTML='<text x="23%" y="65%" fill="white" weight="bold" font-size="50">'+value+'</text>'
+                }
+                else {
+                    eyesGroup.innerHTML='<text x="7%" y="65%" fill="white" weight="bold" font-size="50">'+value+'</text>'
+                }
+            }
+
+            else {
+                switch (value){
+                case 1:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="50%" cy="50%"/>'
+                    break;
+                case 2:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'
+                    break;
+                case 3:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'+
+                                            '<circle r="9%" cx="50%" cy="50%"/>'
+                    break;
+                case 4:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="25%" cy="75%"/>'+
+                                            '<circle r="9%" cx="75%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'
+                    break;
+                case 5:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="25%" cy="75%"/>'+
+                                            '<circle r="9%" cx="75%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'+
+                                            '<circle r="9%" cx="50%" cy="50%"/>'
+                    break;
+                case 6:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="25%" cy="50%"/>'+
+                                            '<circle r="9%" cx="25%" cy="75%"/>'+
+                                            '<circle r="9%" cx="75%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="50%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'
+                    break;
+                case 7:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="25%" cy="50%"/>'+
+                                            '<circle r="9%" cx="25%" cy="75%"/>'+
+                                            '<circle r="9%" cx="75%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="50%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'+
+                                            '<circle r="9%" cx="50%" cy="50%"/>'
+                    break;
+                case 8:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="25%" cy="50%"/>'+
+                                            '<circle r="9%" cx="25%" cy="75%"/>'+
+                                            '<circle r="9%" cx="75%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="50%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'+
+                                            '<circle r="9%" cx="50%" cy="25%"/>'+
+                                            '<circle r="9%" cx="50%" cy="75%"/>'
+                    break;
+                case 9:
+                    eyesGroup.innerHTML=    '<circle r="9%" cx="25%" cy="25%"/>'+
+                                            '<circle r="9%" cx="25%" cy="50%"/>'+
+                                            '<circle r="9%" cx="25%" cy="75%"/>'+
+                                            '<circle r="9%" cx="75%" cy="25%"/>'+
+                                            '<circle r="9%" cx="75%" cy="50%"/>'+
+                                            '<circle r="9%" cx="75%" cy="75%"/>'+
+                                            '<circle r="9%" cx="50%" cy="50%"/>'+
+                                            '<circle r="9%" cx="50%" cy="25%"/>'+
+                                            '<circle r="9%" cx="50%" cy="75%"/>'
+                    break;
+                default:
+                    console.error("unexpected Die value: "+value)
+                    break;
+                }
+            }
+        }
+
+        function drawStatistics(){
+            const span = document.getElementById("Statistics");
+            span.innerHTML = "";
+
+            let spacing = 10;
+            let width = 20;
+            let x=spacing/2;
+            let statheight = 310;
+            let columnheight = 202;
+            let stepsize = (columnheight-2)/Math.max(...sumList.filter(value => value !== undefined));        //determines the factor for the columnsize
+
+            sumList.forEach((value, index) => {
+                let height = value * stepsize;
+                span.innerHTML += '<svg height="'+statheight+'" width="'+(spacing+width)+'"><rect class="dice" x="'+x+'" y="'+(columnheight-height)+'" height="'+height+'" width = "'+width+'"/><text class="statLabel" id="statLabel'+index+'" x="'+(statheight-100)+'" y="0">'+index+'</text></svg>';
+                let txtwidth = document.getElementById("statLabel"+index).getBoundingClientRect().width;
+                let textx = -(spacing+width-txtwidth)/2-6;
+                document.getElementById("statLabel"+index).setAttribute("y",textx);
+            })
+        }
+
+        function addUp(){                   //adds up all the dice values currently in the diceList.
+            let diceSum = 0;
+            let x = 5;
+            diceList.forEach(die => {
+                diceSum+=die.value;
+            })
+            return diceSum;
+        }
+
+        function startInterval(time) {
+            if (intervalIsOn == 0) {
+                intervalIsOn = 1;
+                rollInterval=setInterval(rollDice, time);
+            }
+        }
+
+        function stopInterval() {
+            clearInterval(rollInterval);
+            intervalIsOn = 0;
+        }
+
+        function reset(){
+            diceList=[];
+            sumList=[];
+        }
+
+
+
+    </script>
+</head>
+    <body>
+        <div class="container">
+            <h1>Dicecup</h1>
+            <table class="tStructure">
+                <tr>
+                    <td>
+                        <label class="box" for="diceAmount">Dice Amount</label>
+                    </td>
+                    <td>
+                        <input class="buttonGreen" type="number" id="diceAmount" value="2" max="30" min="1" onchange="diceAmount.value=validation(diceAmount.value, 30, 1, 0); stopInterval(); reset(); createDice(diceAmount.value)"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>   
+                        <label for="diceSides">Dice Sides</label>             
+                    </td>
+                    <td>
+                        <input class="buttonGreen" type="number" id="diceSides" value="6" max="100" min="1" onchange="diceSides.value=validation(diceSides.value, 100, 1, 0); stopInterval(); reset(); createDice(diceAmount.value)"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input class="buttonGreen" type="button" value="Reroll" onclick="rollDice()"> 
+                    </td>
+                    <td>
+                        <span id="dSumUp"></span> 
+                    </td>
+                </tr>
+            </table>
+            <span>
+            </span><br>
+            
+            <div id="diceTable" class="diceArea"></div><br>
+            <br>
+            <table class="tStructure">
+                <tr>
+                    <td>
+                        <label for="cycleTime">cycle time (ms)</label>
+                    </td>
+                    <td>
+                        <input class="buttonGreen" type="number" id="cycleTime" value="1000" max="5000" min="1" onchange="cycleTime.value=validation(cycleTime.value, 5000, 1, 0); if (intervalIsOn==1){stopInterval(); startInterval(cycleTime.value)};"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input class="buttonGreen" type="button" value="start cycle" onclick="startInterval(cycleTime.value)"/>
+                    </td>
+                    <td>
+                        <input class="buttonGreen" type="button" value="stop cycle" onclick="stopInterval()"/>
+                    </td>
+                </tr>
+                <td colspan="2"> <button id="hardMode" class="buttonBlue" onclick="toggleFan()">Alternate Mouse Mode</button>
+                </td>
+            </table>
+            <br>
+            <br>
+            <span id="Statistics"></span><br>
+        </div>
+    </body>
+</html>

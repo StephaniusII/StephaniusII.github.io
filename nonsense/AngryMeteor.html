@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angry Meteor!</title>
+    <link rel="stylesheet" href="./Styles.css">
+    <script src="./fanpointer/fan.js"></script>
+    <script src="./fanpointer/touchInputHandler.js"></script>
+
+
+    <Style>
+        :root {
+            --baseColor: #3d240e;
+            --secondaryColor: #fffaf0;
+            --highlightColor: #ffe6b4;
+        }
+
+        body{
+            padding-top: 1%;
+        }
+
+        span {
+            margin-left: 0.2em;
+
+        }
+
+        #playArea {
+            border: 0.15em solid var(--baseColor);
+            background-color: var(--secondaryColor);
+        }
+
+        #sGameOver {
+            font-size: 3em;
+            font-weight: bold;
+            fill: red;
+            stroke: black;
+            stroke-width: 0.06em;
+            visibility: collapse;
+        }
+
+        #sGameOver.show {
+            visibility: visible;
+        }
+
+        .container{
+            width: auto;
+        }
+
+
+    </Style>
+    <script>
+        n = 0;                  //score
+        fallingInterval = 0;      //initiated to run, access and restart intervals globally.
+        intervalIsOn = 0;       //toggled by functions "startInterval" and "stopInterval"
+        lives = 3;              //-1 when square hits bottom
+        gameOver = 0;    
+
+        window.onload = function() {
+            maxY=window.innerHeight-220;
+            maxX=window.innerWidth-100;
+            hitBottom = maxY-120;   //height, where the square hits the ground
+            document.getElementById("playArea").setAttribute("height", maxY);
+            document.getElementById("playArea").setAttribute("width", maxX);
+            document.getElementById("sGameOver").setAttribute("x", maxX/2-120);
+            document.getElementById("sGameOver").setAttribute("y", maxY/2);
+            document.getElementById("clickMe").setAttribute("y", -200);
+            document.getElementById("iSeeFire").setAttribute("y", -200);       
+        } 
+
+        window.onresize = function() {
+            maxY=window.innerHeight-220;
+            maxX=window.innerWidth-100;
+            document.getElementById("playArea").setAttribute("height", maxY);
+            document.getElementById("playArea").setAttribute("width", maxX);
+            document.getElementById("sGameOver").x = maxX/2-100;
+            document.getElementById("sGameOver").y = maxY/2;
+        }     
+
+        function falling() {          
+            posY=posY+1+(n*0.3);
+            if (posY>hitBottom) {
+                stopInterval();
+                lives=lives-1;
+                if (lives<=0){
+                    gameOver=1;
+                    document.getElementById("sLives").innerText = "Lives: "+lives;
+                    document.getElementById("sGameOver").classList.add("show");
+                }
+
+                else {
+                    document.getElementById("sLives").innerText = "Lives: "+lives;
+                    startInterval();
+                }
+
+            }
+            document.getElementById("iSeeFire").setAttribute("y", posY);
+            document.getElementById("clickMe").setAttribute("y", posY);
+        }
+
+        function startInterval() {
+            if (intervalIsOn == 0) {
+                intervalIsOn = 1;
+                time = 1;
+                fallingInterval=setInterval(falling, time);
+                newMeteor();
+            }
+        }
+
+        function stopInterval() {
+            clearInterval(fallingInterval);
+            intervalIsOn = 0;
+        }
+
+        function catchIt() {
+            if (gameOver==0) {
+                stopInterval();
+                startInterval();
+                n++;
+                document.getElementById("sScore").innerText = "Score: " +n;
+            }
+        }
+
+        function newMeteor(){
+            posY=-200;
+            posX=Math.floor(Math.random()*(maxX-50));
+            document.getElementById("iSeeFire").setAttribute("x", posX);
+            document.getElementById("clickMe").setAttribute("x", posX);
+            document.getElementById("iSeeFire").setAttribute("y", posY);
+            document.getElementById("clickMe").setAttribute("y", posY);
+        }
+
+        function reset() {
+            stopInterval();
+            n = 0;
+            lives=3;
+            gameOver=0;
+            document.getElementById("iSeeFire").setAttribute("x", 0);
+            document.getElementById("iSeeFire").setAttribute("y", -200);
+            document.getElementById("clickMe").setAttribute("x", 0);
+            document.getElementById("clickMe").setAttribute("y", -200);
+            document.getElementById("sScore").innerText = "Score: 0";
+            document.getElementById("sLives").innerText = "Lives: "+lives;
+            document.getElementById("sGameOver").classList.remove("show");
+        }
+   </script>
+</head>
+<body>
+    <div class="container">
+    <p>
+        <svg id="playArea" height="550" width="550">
+                <image id="iSeeFire" href="./ressources/clipart-fire-animated-9.gif" height="200" width="200" transform="translate(-65 -110)"/>
+                <image id="clickMe" href="./ressources/AnotherOne.png" height="130" width="70"  onclick="catchIt(); falling();"/>
+                <text id="sGameOver" x="0" y="15" width="500" height="500">Game Over</text>
+        </svg>
+    </p>
+    <p>
+        <button id="start" class="buttonGreen" onclick="startInterval()">Start</button>
+        <button id="reset" class="buttonBlue" onclick="reset()">Reset</button>
+        <button id="hardMode" class="buttonRed" onclick="toggleFan()">Hardcore Mode</button>
+    </p>
+    <span id="sScore">Score: 0</span>  <span id="sLives">Lives: 3</span>  
+    </div>
+</body>
+</html>

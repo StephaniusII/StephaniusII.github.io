@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Number</title>
+    <link rel="stylesheet" href="./Styles.css">
+    <script src="./fanpointer/fan.js"></script>
+    <script src="./fanpointer/touchInputHandler.js"></script>
+
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+
+    <script>
+        let vRange;
+        let numberToGuess;
+        let n=0;
+
+
+        function start(){
+            hideParagraph("pStart");
+            showParagraph("pNumRange");
+        }
+
+        function restart(){
+            showParagraph("pStart")
+            hideParagraph("pNumRange")
+            hideParagraph("pGuess")
+            hideParagraph("pWon")
+            vRange="";
+            numberToGuess="";
+            n=0;
+            nRange.value=100;
+            document.getElementById("pHint").innerHTML = '';
+            document.getElementById("pEvaluation").innerHTML = '';
+            document.getElementById("pTitle").innerHTML = 'Let\'s play a Game!';
+        }
+
+        function setRange(range){
+            vRange = range;
+            numberToGuess=1+Math.floor(Math.random()*range);
+            hideParagraph("pNumRange");
+            showParagraph("pGuess");
+            nGuess.value="";
+        }
+
+        function guess(numberGuessed){
+            n++;
+            if (numberGuessed > numberToGuess){
+                document.getElementById("pHint").innerHTML = 'The number <span class="subtitle">' +numberGuessed+ '</span> is <span class="subtitle">higher</span> than my number.';
+                nGuess.value="";
+            }
+            else if (numberGuessed < numberToGuess){
+                document.getElementById("pHint").innerHTML = 'The number <span class="subtitle">' +numberGuessed+ '</span> is <span class="subtitle">lower</span> than my number.';
+                nGuess.value="";
+            }
+            else if (numberGuessed == numberToGuess){
+                document.getElementById("pHint").innerHTML = '';
+                document.getElementById("pTitle").innerHTML = 'Congratulations!';
+                document.getElementById("pEvaluation").innerHTML = 'You guessed the number '+numberToGuess+' correctly using '+n+' tries.';
+                hideParagraph("pGuess");
+                showParagraph("pWon");
+                nGuess.value="";
+            }
+        }
+
+        function validation(a, ulimit, llimit, decimals){
+            a*=1;
+            ulimit*=1;
+            llimit*=1;
+            decimals*=1;
+            if (a > ulimit){
+                b=ulimit;
+            }
+            else if (a < llimit){
+                b=llimit;
+            }
+            else if (isNaN(a)){
+                b="error";
+            }
+            else{
+                b=1*(a.toFixed(decimals));
+            }
+            return b;
+        }
+
+        function hideParagraph(id){
+            document.getElementById(id).classList= "hidden";
+        }
+
+        function showParagraph(id){
+            document.getElementById(id).classList = "";
+        }        
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 id="pTitle">Let's play a Game!</h1>
+        <p id="pStart">
+            <!--Start-->
+
+            I think of a number and you try to guess it.<br>
+            I will tell you if my number is 
+                <b>higher</b> 
+            or 
+                <b>lower</b> 
+            than your guess. <br>
+
+            <input type="button" id="bStart" class="buttonGreen" onclick="start()" value="Start" autofocus="autofocus"/> <br>
+            <br>
+        </p>
+
+
+        <p id="pNumRange" class="hidden">
+            <!--Select Range-->
+            <label for="nRange">What Range should the number be in?</label> <br>
+            <input autofocus="autofocus" class="textbox" id="nRange" type="number" value="100" onchange="nRange.value=validation(nRange.value, 99999, 1, 0)">
+            <input id="bSubmit" type="button" value="Submit" class="buttonGreen" onclick="setRange(nRange.value)"><br>    
+            <br>
+        </p>
+
+        <p id="pGuess" class="hidden">
+            <!--Guess Number-->
+            <label for="nGuess">What do you guess?</label> <br>
+            <input class="textbox" id="nGuess" type="number" onchange="nGuess.value=validation(nGuess.value, nRange.value, 1, 0)">
+            <input type="button" value="Guess" id="bGuess"class="buttonGreen" onclick="guess(nGuess.value)" autofocus="autofocus"> <br>
+            <input id="bReset" type="button" value="Restart" id="bRestart" class="buttonBlue" onclick="restart()"> <br>
+            <br>
+            <span id="pHint"></span>
+        </p>
+
+        <p id="pWon" class="hidden">
+            <!--You Won-->
+            <span id="pEvaluation"></span> <br>
+            <input id="bPlayAgain" type="button" value="Play Again!" id="bRestart" class="buttonGreen" onclick="restart()">
+        </p>
+
+        <button id="hardMode" class="buttonBlue" onclick="toggleFan()">Alternate Mouse Mode</button>
+
+    </div>
+
+</body>
+</html>
