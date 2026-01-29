@@ -4,7 +4,12 @@ root {
     --highlightColor: #ffe6b4;
 }
 
+html, body {
+    background-color: var(--baseColor);
+}
+
 body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #210e00;
     margin: 0;
     padding: 0;
@@ -82,13 +87,6 @@ a:not(:hover) {
     animation-fill-mode: backwards;
 }
 
-div:hover {
-    animation-name: linkHover;
-    animation-duration: 0.3s;
-    animation-fill-mode: forwards;
-    background-color: #e6a36166;
-}
-
 .buttonGreen {
     border: 0.15em solid #2e3700;
     color: #2e3700;
@@ -147,13 +145,6 @@ div:hover {
 
 @media (max-width: 600px) {
     body {
-        background-image: url("./ressources/pexels-parimoofarhaan-14222593.webp");
-        /*
-        License Information:
-        This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
-        For more details, visit: https://creativecommons.org/licenses/by-sa/4.0/
-        source: https://www.pexels.com/photo/red-leaf-trees-near-the-road-33109/
-        */
         padding-top: 2%;
         background-position: top;
     }

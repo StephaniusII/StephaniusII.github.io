@@ -98,16 +98,19 @@ html, body {
 }
 
 #debuggingView {
-    position: absolute;
+    position: fixed;
     color: black;
-    font-weight: bold;
-    top: 25px;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 1.5em;
+    left: 1.5em;
+    width: auto;
+    height: auto;
     pointer-events: none;
     z-index: 1000;
     display: none;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 0.5em;
+    border-radius: 0.5em;
+    font-style: monospace;
 }
 
 .expand{

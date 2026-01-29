@@ -10,9 +10,12 @@ Some elements were created with the help of Microsoft Copilot.
 const cursorVelocity    =   {vel:   0.0,     velX:  0.0,  velY:  0.0};
 const accelerationXY    =   {x:     0.0,     y:     0.0};
 const relPos            =   {distance: 0.0, angle: 0.0, angleOffset: 0.0};
+const hoveredElements   =   new Set();
 
 //Contains elements that are clickable or hoverable.
+const elementSelectors = 'a, button, input, [onclick], [role="button"], [tabindex], [class*="hover"]';
 let elements = new Set();
+let ignoredElements = new Set();
 
 //size of playarea
 var screensize          =   null;
@@ -78,6 +81,10 @@ function initFan() {
             </svg>
         </div>
     `;
+
+    ignoredElements.add(container);
+
+
     const fragment = document.createDocumentFragment();
     fragment.appendChild(container);
     document.body.appendChild(fragment);    
@@ -86,7 +93,11 @@ function initFan() {
     loadScript(`${scriptDirectory}/touchInputHandler.js`);
 
     // get clickable elements
-    document.querySelectorAll('a, button, input, [onclick], [role="button"], [tabindex]').forEach(element => elements.add(element));
+    document.querySelectorAll(elementSelectors).forEach(element => {
+        if (!ignoredElements.has(element) && !Array.from(ignoredElements).some(ignored => ignored.contains(element))) {
+            elements.add(element);
+        }
+    });
 
     //copy each :hover pseudoclass to a .hover class.
     //this is needed because the :hover pseudoclass does not work with the fanPointer
@@ -139,19 +150,44 @@ function initFan() {
         debugging === true ? console.log("Added ID to element:", elementsArray[i]) : null;
     }
 
-    //add a mutation observer to the document body to detect added or removed elements
-    //next step: check new node and child nodes for clickable and hoverable elements
-    //and add them to the elements set or remove them if they are no longer there.
+    //adds a mutation observer to the document body to detect added or removed elements
+    //checks new node and child nodes for clickable and hoverable elements
+    //and adds them to the elements set or remove them if they are no longer there.
     const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
                 if (node.nodeType === 1) { // Ensures it's an element (not text)
-                    console.log("New element added:", node);
+                    //check if the new node is clickable or hoverable
+                    if (node.matches(elementSelectors) || node.querySelector(elementSelectors + ':not(' + Array.from(ignoredElements).map(el => '#' + el.id).join(',') + ')')) {
+                            if (!node.id) {
+                                node.id = `auto-id-${Date.now()}`;
+                                debugging === true ? console.log("Added ID to new element:", node) : null;
+                            }
+                        elements.add(node);
+                        if (node.querySelectorAll) {
+                            node.querySelectorAll(elementSelectors).forEach(child => {
+                                if (!child.id) {
+                                    child.id = `auto-id-${Date.now()}`;
+                                    debugging === true ? console.log("Added ID to new child element:", child) : null;
+                                }
+                                elements.add(child);
+                                debugging === true ? console.log("Added to interactive elements:", child) : null;
+                            });
+                        debugging === true ? console.log("Added to interactive elements:", node) : null;
+                        }
+                    }
                 }
             });
+
             mutation.removedNodes.forEach(node => {
                 if (node.nodeType === 1) { // Ensures it's an element (not text)
-                    console.log("Element removed:", node);
+                    if (elements.has(node)) {
+                        elements.delete(node);
+                        if (node.id && node.id.startsWith("auto-id-")) {
+                            node.removeAttribute("id");
+                        }
+                        debugging === true ? console.log("Removed from interactive elements:", node) : null;
+                    }
                 }
             });
         });
@@ -358,6 +394,31 @@ function moveCursor() {
     cursorDiv.style.left = newLeft + "px";
 }
 
+function handleSliderInteraction(sliderElement) {
+    //Get the slider's bounding box and pointer position
+    const sliderBox = sliderElement.getBoundingClientRect();
+    const pointerBox = document.getElementById("pointer").getBoundingClientRect();
+    
+    //Calculate the pointer position relative to the slider
+    const pointerX = pointerBox.left;
+    const sliderStart = sliderBox.left;
+    const sliderWidth = sliderBox.width;
+    
+    //Calculate the percentage of where the pointer is on the slider
+    let percentage = (pointerX - sliderStart) / sliderWidth;
+    percentage = Math.max(0, Math.min(1, percentage)); //Clamp between 0 and 1
+    
+    //Convert to slider value
+    const min = parseFloat(sliderElement.min) || 0;
+    const max = parseFloat(sliderElement.max) || 100;
+    const newValue = min + (max - min) * percentage;
+    
+    //Update the slider value and trigger events
+    sliderElement.value = newValue;
+    sliderElement.dispatchEvent(new Event("input", { bubbles: true }));
+    sliderElement.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 function isPointerOnObject(pointerId, objectId) {
     const pointer = document.getElementById(pointerId);
     const objectElem = document.getElementById(objectId);
@@ -423,7 +484,12 @@ function toggleDebugger(){
 
 function showValues(){
     const posSpan = document.getElementById("posSpan");
-    posSpan.innerHTML = `Distance: ${Math.floor(relPos.distance)} <br> Relative Angle: ${relPos.angle.toFixed(2)}<br> Angle Offset: "${relPos.angleOffset.toFixed(2)}<br> Velocity: ${cursorVelocity.vel.toFixed(2)}`;
+    const hoveredElementsArray = Array.from(hoveredElements);
+    let hoveredElementsString = "Hovered Elements: None <br><br>";
+    if (hoveredElementsArray.length > 0){
+        hoveredElementsString = `Hovered Elements: <br> ${hoveredElementsArray.map(elem => elem.id).join(", ")} <br><br>`;
+    }
+    posSpan.innerHTML = `Distance: ${Math.floor(relPos.distance)} <br> Relative Angle: ${relPos.angle.toFixed(2)}<br> Angle Offset: "${relPos.angleOffset.toFixed(2)}<br> Velocity: ${cursorVelocity.vel.toFixed(2)} <br> ${hoveredElementsString}`;
 
     const speedVectorElem = document.getElementById("speedVector");
     speedVectorElem.x1.baseVal.value = cursorDiv.getBoundingClientRect().x;
@@ -459,8 +525,9 @@ function showValues(){
 function checkInteraction(elementsSet){
     elementsSet.forEach((element) => {
         try {
-            if (isPointerOnObject("pointer", element.id) /*&& !isElementHidden(element)*/) {
+            if (isPointerOnObject("pointer", element.id) && !isElementHidden(element)) {
                 element.classList.add("hover")
+                hoveredElements.add(element);
                 if (clickOccured) {
                     element.classList.add("clicked")
 
@@ -468,7 +535,12 @@ function checkInteraction(elementsSet){
                     //and has an onclick attribute. This is needed for the fanPointer to work with SVG elements
                     if (element instanceof SVGElement && element.hasAttribute("onclick")) {
                         element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-                    } else { element.click(); }
+                    } else if (element.type === "range") {
+                        //Special handling for range sliders
+                        handleSliderInteraction(element);
+                    } else { 
+                        element.click(); 
+                    }
 
                     clickOccured = false;
                     setTimeout(() => {
@@ -479,6 +551,7 @@ function checkInteraction(elementsSet){
                 }
             } else {
                 element.classList.remove("hover")
+                hoveredElements.delete(element);
             }
         } catch (error) {
             console.error("Error processing element with ID:", element.id, error);
@@ -489,23 +562,23 @@ function checkInteraction(elementsSet){
 
 function isElementHidden(element) {
   while (element && element !== document.body) {
-    console.log("Element: ", element + "\n Type: ", typeof element);
+    //console.log("Element: ", element + "\n Type: ", typeof element);
     const style = getComputedStyle(element);
     const box = element.getBoundingClientRect();
     const parent = element.parentElement;
-    console.log("Parent element:", parent);
+    //console.log("Parent element:", parent);
     let parentBox = null;
     if (   style.display    === 'none' 
         || style.visibility === 'hidden' 
         || style.visibility === 'collapse') {
-        console.log("Element is hidden.\n display : " + style.display, + "\n visibility: " + style.visibility);
+        //console.log("Element is hidden.\n display : " + style.display, + "\n visibility: " + style.visibility);
         return true; // element is collapsed or hidden
     }
     if ((parentBox = parent.getBoundingClientRect()) ? true : false){
         if ((((parentBox.x + parentBox.width) < box.x) 
             || ((parentBox.y + parentBox.height) < box.y))
             && getComputedStyle(parent).overflow !== "visible"){
-            console.log("Element is clipped due to overflow");
+            //console.log("Element is clipped due to overflow");
             return true; // element is clipped due to overflow
         }
     }
