@@ -1,5 +1,5 @@
 /*
-This script is used to move and turn a Fan image and control a cursor image. The new cursor can interact with elements of the class "target" on the page.
+This script is used to move and turn a Fan image and control a cursor image. The new cursor can interact with elements of many type on the page.
 
 Author: Stephan Burn
 Date: 19.04.2025
